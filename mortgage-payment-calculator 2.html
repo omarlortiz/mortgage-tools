@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mortgage Payment Estimator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      padding: 30px;
+    }
+    .container {
+      background: #fff;
+      max-width: 820px;
+      margin: auto;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 25px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+    .input-wrap {
+      display: flex;
+      align-items: center;
+      margin-top: 5px;
+    }
+    .input-wrap span {
+      margin-right: 8px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    input.short {
+      width: 100px;
+      margin-left: 10px;
+    }
+    button {
+      width: 100%;
+      background: #000;
+      color: white;
+      padding: 14px;
+      margin-top: 30px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 18px;
+    }
+    .results {
+      margin-top: 30px;
+      background: #e7f0ff;
+      padding: 18px;
+      border-radius: 10px;
+      font-size: 16px;
+    }
+    .disclaimer {
+      font-size: 12px;
+      color: #777;
+      margin-top: 25px;
+      text-align: justify;
+    }
+    canvas {
+      margin-top: 30px;
+      max-height: 280px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Monthly Mortgage Payment Estimator</h2>
+
+    <label>Home Price:</label>
+    <div class="input-wrap"><span>$</span><input type="number" id="price" placeholder="e.g. 360000"></div>
+
+    <label>Down Payment:</label>
+    <div class="input-wrap">
+      <span>$</span><input type="number" id="down" class="short" placeholder="Amount" oninput="syncDown('amount')">
+      <span style="margin-left:20px;">or</span>
+      <input type="number" id="downPct" class="short" placeholder="%" oninput="syncDown('percent')">
+    </div>
+
+    <label>Loan Type:</label>
+    <select id="loanType">
+      <option value="fha">FHA</option>
+      <option value="conv">Conventional</option>
+      <option value="va">VA</option>
+    </select>
+
+    <label>Loan Term:</label>
+    <select id="term">
+      <option value="30">30 Years</option>
+      <option value="20">20 Years</option>
+      <option value="15">15 Years</option>
+    </select>
+
+    <label>Interest Rate (%):</label>
+    <input type="number" id="rate" step="0.01" placeholder="e.g. 6.5">
+
+    <label>Property Tax (%):</label>
+    <input type="number" id="tax" step="0.01" placeholder="e.g. 1.25">
+
+    <label>Home Insurance ($/month):</label>
+    <div class="input-wrap"><span>$</span><input type="number" id="insurance" placeholder="e.g. 120"></div>
+
+    <label>Monthly HOA Dues ($):</label>
+    <div class="input-wrap"><span>$</span><input type="number" id="hoa" placeholder="e.g. 0"></div>
+
+    <button onclick="estimate()">Calculate Monthly Payment</button>
+
+    <div id="results" class="results" style="display:none;"></div>
+    <canvas id="breakdownChart" width="400" height="250" style="display:none;"></canvas>
+
+    <p class="disclaimer">
+      This is an estimate only and should not be used as a final loan quote. PMI is based on standard FHA assumptions for <5% down. Rates and amounts may vary depending on credit and program eligibility. Contact our loan advisor for exact pricing and program details.
+    </p>
+  </div>
+
+  <script>
+    function syncDown(source) {
+      const price = parseFloat(document.getElementById('price').value);
+      const down = document.getElementById('down');
+      const downPct = document.getElementById('downPct');
+      if (!price) return;
+
+      if (source === 'amount') {
+        downPct.value = ((parseFloat(down.value) || 0) / price * 100).toFixed(2);
+      } else if (source === 'percent') {
+        down.value = ((parseFloat(downPct.value) || 0) * price / 100).toFixed(0);
+      }
+    }
+
+    function estimate() {
+      const price = parseFloat(document.getElementById('price').value) || 0;
+      const down = parseFloat(document.getElementById('down').value) || 0;
+      const rate = parseFloat(document.getElementById('rate').value) / 100 || 0;
+      const tax = parseFloat(document.getElementById('tax').value) / 100 || 0;
+      const ins = parseFloat(document.getElementById('insurance').value) || 0;
+      const hoa = parseFloat(document.getElementById('hoa').value) || 0;
+      const type = document.getElementById('loanType').value;
+      const term = parseInt(document.getElementById('term').value);
+
+      const loan = price - down;
+      const n = term * 12;
+      const r = rate / 12;
+      const pi = loan * r / (1 - Math.pow(1 + r, -n));
+      const propertyTax = (price * tax) / 12;
+      const mip = type === 'fha' ? (loan * 0.0085) / 12 : (type === 'conv' && down / price < 0.20) ? (loan * 0.005) / 12 : 0;
+      const total = pi + propertyTax + ins + mip + hoa;
+
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('results').innerHTML = `
+        <strong>Total Estimated Payment:</strong> $${total.toFixed(2)}<br>
+        Principal & Interest: $${pi.toFixed(2)}<br>
+        Property Tax: $${propertyTax.toFixed(2)}<br>
+        Insurance: $${ins.toFixed(2)}<br>
+        Mortgage Insurance: $${mip.toFixed(2)}<br>
+        HOA: $${hoa.toFixed(2)}
+      `;
+
+      const ctx = document.getElementById('breakdownChart').getContext('2d');
+      document.getElementById('breakdownChart').style.display = 'block';
+
+      if (window.breakdownChart) window.breakdownChart.destroy();
+      window.breakdownChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Principal & Interest', 'Tax', 'Insurance', 'MI', 'HOA'],
+          datasets: [{
+            data: [pi, propertyTax, ins, mip, hoa],
+            backgroundColor: ['#4e73df', '#e74a3b', '#f6c23e', '#36b9cc', '#858796'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let value = context.raw;
+                  return `${context.label}: $${value.toFixed(2)}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
