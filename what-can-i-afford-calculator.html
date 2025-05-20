@@ -1,0 +1,125 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>What Can I Afford Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 40px 20px;
+    }
+    .calculator-wrapper {
+      max-width: 700px;
+      margin: auto;
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      width: 100%;
+      background: #000;
+      color: #fff;
+      padding: 14px;
+      margin-top: 30px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .results {
+      background: #eef3fc;
+      padding: 20px;
+      margin-top: 30px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator-wrapper">
+    <h2>What Can I Afford?</h2>
+
+    <label>Annual Salary ($):</label>
+    <input type="number" id="income" placeholder="e.g. 100000">
+
+    <label>Monthly Debt Payments ($):</label>
+    <input type="number" id="debt" placeholder="e.g. 1500">
+
+    <label>Interest Rate (%):</label>
+    <input type="number" id="rate" placeholder="e.g. 6.5">
+
+    <label>Loan Term (Years):</label>
+    <select id="term">
+      <option value="30">30</option>
+      <option value="20">20</option>
+      <option value="15">15</option>
+    </select>
+
+    <button onclick="calculateAffordability()">Calculate Maximum Purchase Price</button>
+
+    <div class="results" id="output" style="display:none;"></div>
+  </div>
+
+  <script>
+    function calculateAffordability() {
+      const income = parseFloat(document.getElementById('income').value) || 0;
+      const debt = parseFloat(document.getElementById('debt').value) || 0;
+      const rate = parseFloat(document.getElementById('rate').value) / 100 || 0;
+      const term = parseInt(document.getElementById('term').value);
+
+      const monthlyIncome = income / 12;
+      const fha_front = monthlyIncome * 0.47;
+      const fha_back = (monthlyIncome * 0.57) - debt;
+      const conv_front = monthlyIncome * 0.43;
+      const conv_back = (monthlyIncome * 0.50) - debt;
+
+      const fha_max_payment = Math.min(fha_front, fha_back);
+      const conv_max_payment = Math.min(conv_front, conv_back);
+
+      const n = term * 12;
+      const r = rate / 12;
+      const fha_loan_amt = fha_max_payment * (1 - Math.pow(1 + r, -n)) / r;
+      const conv_loan_amt = conv_max_payment * (1 - Math.pow(1 + r, -n)) / r;
+
+      const fha_price = fha_loan_amt / 0.965;
+      const conv_price = conv_loan_amt / 0.95;
+
+      const out = document.getElementById('output');
+      out.style.display = 'block';
+      out.innerHTML = `
+        <strong>FHA Loan Estimate:</strong><br>
+        Max Monthly Payment: $${fha_max_payment.toFixed(2)}<br>
+        Max Loan Amount: $${fha_loan_amt.toLocaleString(undefined, {maximumFractionDigits: 0})}<br>
+        Max Home Price (with 3.5% down): $${fha_price.toLocaleString(undefined, {maximumFractionDigits: 0})}<br><br>
+
+        <strong>Conventional Loan Estimate:</strong><br>
+        Max Monthly Payment: $${conv_max_payment.toFixed(2)}<br>
+        Max Loan Amount: $${conv_loan_amt.toLocaleString(undefined, {maximumFractionDigits: 0})}<br>
+        Max Home Price (with 5% down): $${conv_price.toLocaleString(undefined, {maximumFractionDigits: 0})}
+      `;
+    }
+  </script>
+</body>
+</html>
