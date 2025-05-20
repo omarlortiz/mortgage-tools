@@ -1,0 +1,108 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mortgage Tools | 3-in-1 Tabs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    p.description {
+      text-align: center;
+      color: #555;
+      margin-bottom: 30px;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab-button {
+      background: #e0e0e0;
+      border: none;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 15px;
+      border-radius: 8px 8px 0 0;
+    }
+    .tab-button.active {
+      background: #000;
+      color: white;
+    }
+    iframe {
+      width: 100%;
+      height: 950px;
+      border: none;
+      display: none;
+      border-radius: 0 0 10px 10px;
+    }
+    iframe.active {
+      display: block;
+    }
+    .cta {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .cta a {
+      background: #000;
+      color: white;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Mortgage Planning Tools</h1>
+    <p class="description">Explore what you can afford, what you'll pay monthly, and how much you qualify for — all in one place.</p>
+
+    <div class="tabs">
+      <button class="tab-button active" onclick="switchTab(0)">What Can I Afford?</button>
+      <button class="tab-button" onclick="switchTab(1)">Monthly Payment Estimator</button>
+      <button class="tab-button" onclick="switchTab(2)">How Much Can I Qualify For?</button>
+    </div>
+
+    <iframe src="https://omarlortiz.github.io/mortgage-tools/what-can-i-afford-calculator.html" class="active"></iframe>
+    <iframe src="https://omarlortiz.github.io/mortgage-tools/mortgage-payment-side-by-side.html"></iframe>
+    <iframe src="https://omarlortiz.github.io/mortgage-tools/how-much-can-i-qualify-for.html"></iframe>
+
+    <div class="cta">
+      <a href="https://www.myrealtyca.com/contact" target="_blank">Get Prequalified Now</a>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(index) {
+      const iframes = document.querySelectorAll("iframe");
+      const buttons = document.querySelectorAll(".tab-button");
+      iframes.forEach((frame, i) => {
+        frame.classList.toggle("active", i === index);
+        buttons[i].classList.toggle("active", i === index);
+      });
+    }
+  </script>
+</body>
+</html>
