@@ -1,0 +1,190 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mortgage Calculator | Side-by-Side</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 40px 20px;
+    }
+    .calculator-wrapper {
+      max-width: 1200px;
+      margin: auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.08);
+    }
+    .column {
+      flex: 1 1 400px;
+      min-width: 360px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    label {
+      font-weight: 600;
+      margin-top: 15px;
+      display: block;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      width: 100%;
+      margin-top: 25px;
+      background: #000;
+      color: #fff;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .results {
+      background: #eef3fc;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 8px;
+    }
+    canvas {
+      margin-top: 30px;
+      max-height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <div class="calculator-wrapper">
+    <div class="column">
+      <h2>Payment Calculator</h2>
+      <label>Home Price:</label>
+      <input type="number" id="price" placeholder="360000" oninput="syncDown('price')">
+
+      <label>Down Payment:</label>
+      <input type="number" id="down" placeholder="50000" oninput="syncDown('down')">
+      <input type="number" id="downPct" placeholder="%" oninput="syncDown('downPct')">
+
+      <label>Loan Type:</label>
+      <select id="loanType">
+        <option value="fha">FHA</option>
+        <option value="conv">Conventional</option>
+        <option value="va">VA</option>
+      </select>
+
+      <label>Loan Period:</label>
+      <select id="term">
+        <option value="30">30 Years</option>
+        <option value="20">20 Years</option>
+        <option value="15">15 Years</option>
+      </select>
+
+      <label>Interest Rate (%):</label>
+      <input type="number" id="rate" step="0.01" placeholder="6.5">
+
+      <label>Property Tax Rate (%):</label>
+      <input type="number" id="tax" step="0.01" placeholder="1.25">
+
+      <label>Home Insurance ($/mo):</label>
+      <input type="number" id="insurance" placeholder="120">
+
+      <label>HOA Dues ($/mo):</label>
+      <input type="number" id="hoa" placeholder="0">
+
+      <button onclick="estimate()">Calculate Payment</button>
+    </div>
+
+    <div class="column">
+      <h2>Results</h2>
+      <div class="results" id="output" style="display:none;"></div>
+      <canvas id="chart" style="display:none;"></canvas>
+    </div>
+  </div>
+
+  <script>
+    function syncDown(source) {
+      const price = parseFloat(document.getElementById('price').value) || 0;
+      const down = document.getElementById('down');
+      const downPct = document.getElementById('downPct');
+
+      if (source === 'down') {
+        downPct.value = ((parseFloat(down.value) || 0) / price * 100).toFixed(2);
+      } else if (source === 'downPct') {
+        down.value = ((parseFloat(downPct.value) || 0) * price / 100).toFixed(0);
+      }
+    }
+
+    function estimate() {
+      const price = parseFloat(document.getElementById('price').value) || 0;
+      const down = parseFloat(document.getElementById('down').value) || 0;
+      const rate = parseFloat(document.getElementById('rate').value) / 100 || 0;
+      const tax = parseFloat(document.getElementById('tax').value) / 100 || 0;
+      const ins = parseFloat(document.getElementById('insurance').value) || 0;
+      const hoa = parseFloat(document.getElementById('hoa').value) || 0;
+      const type = document.getElementById('loanType').value;
+      const term = parseInt(document.getElementById('term').value);
+
+      const loan = price - down;
+      const n = term * 12;
+      const r = rate / 12;
+      const pi = loan * r / (1 - Math.pow(1 + r, -n));
+      const propertyTax = (price * tax) / 12;
+      const mip = type === 'fha' ? (loan * 0.0085) / 12 : (type === 'conv' && down / price < 0.20) ? (loan * 0.005) / 12 : 0;
+      const total = pi + propertyTax + ins + mip + hoa;
+
+      const output = document.getElementById('output');
+      output.style.display = 'block';
+      output.innerHTML = `
+        <strong>Total Estimated Monthly Payment:</strong> $${total.toFixed(2)}<br>
+        Principal & Interest: $${pi.toFixed(2)}<br>
+        Property Tax: $${propertyTax.toFixed(2)}<br>
+        Insurance: $${ins.toFixed(2)}<br>
+        Mortgage Insurance: $${mip.toFixed(2)}<br>
+        HOA: $${hoa.toFixed(2)}
+      `;
+
+      const ctx = document.getElementById('chart');
+      ctx.style.display = 'block';
+
+      if (window.paymentChart) window.paymentChart.destroy();
+      window.paymentChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: ['Principal & Interest', 'Property Tax', 'Insurance', 'MI', 'HOA'],
+          datasets: [{
+            data: [pi, propertyTax, ins, mip, hoa],
+            backgroundColor: ['#4e73df', '#e74a3b', '#f6c23e', '#36b9cc', '#858796']
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let value = context.raw;
+                  return `${context.label}: $${value.toFixed(2)}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
